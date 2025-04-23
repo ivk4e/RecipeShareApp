@@ -1,7 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-<h2>Най-харесвани рецепти днес</h2>
+<h2>Топ 10 най-харесвани рецепти днес</h2>
+<p>Ако днес си публикувал рецепта и някой я е харесал повече от 1 път, то ще я видиш тук.</p>
 
 <div class="mt-4">
         <a href="{{ route('recipes.index') }}" class="btn btn-outline-primary">📖 Виж всички рецепти</a>
@@ -79,11 +80,41 @@
                     <hr>
                     <!-- Секция коментари -->
                     <h6>Коментари</h6>
-                    <div class="mb-2">
-                        <textarea class="form-control" rows="2" placeholder="Остави коментар..." disabled></textarea>
-                        <button class="btn btn-sm btn-primary mt-1" disabled>Публикувай (очаква се)</button>
-                        <p class="text-muted mt-2">Функцията за коментари е в разработка 😊</p>
-                    </div>
+
+                    @auth
+                    <form action="{{ route('comments.store', $recipe->id) }}" method="POST" class="mb-3">
+                        @csrf
+                        <div class="mb-2">
+                            <textarea name="comment" class="form-control" rows="2" placeholder="Остави коментар..." required></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label for="rating">Оценка:</label>
+                            <select name="rating" class="form-select form-select-sm w-auto d-inline-block ms-2">
+                                <option value="">Без</option>
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <option value="{{ $i }}">{{ $i }} ⭐</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary">Публикувай</button>
+                    </form>
+                    @endauth
+
+                    <!-- Показване на коментари -->
+                    @if($recipe->comments->count())
+                        @foreach($recipe->comments as $comment)
+                            <div class="border p-2 mb-2 rounded">
+                                <strong>{{ $comment->user->name }}</strong>
+                                @if($comment->rating)
+                                    – {{ $comment->rating }} ⭐
+                                @endif
+                                <p class="mb-1">{{ $comment->comment }}</p>
+                                <small class="text-muted">{{ $comment->created_at->diffForHumans() }}</small>
+                            </div>
+                        @endforeach
+                    @else
+                        <p class="text-muted">Още няма коментари.</p>
+                    @endif
                 </div>
             </div>
         </div>
