@@ -32,4 +32,9 @@ class Recipe extends Model
     {
         return $this->hasMany(RecipeLike::class);
     }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 }

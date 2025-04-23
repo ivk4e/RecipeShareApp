@@ -3,12 +3,65 @@
 @section('content')
 <h2>Всички рецепти</h2>
 
+<!-- Форма за филтриране -->
+<form method="GET" action="{{ route('recipes.index') }}" class="mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label for="category" class="form-label">Категория</label>
+            <select name="category" id="category" class="form-select">
+                <option value="">Всички</option>
+                @foreach($categories as $category)
+                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                        {{ $category->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label for="user" class="form-label">Автор</label>
+            <input type="text" name="user" id="user" class="form-control"
+                   placeholder="Име на потребител" value="{{ request('user') }}">
+        </div>
+
+        <div class="col-md-3">
+            <label for="rating" class="form-label">Рейтинг</label>
+            <select name="rating" id="rating" class="form-select">
+                <option value="">Всички</option>
+                @for ($i = 5; $i >= 1; $i--)
+                    <option value="{{ $i }}" {{ request('rating') == $i ? 'selected' : '' }}>
+                        {{ $i }} ⭐
+                    </option>
+                @endfor
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label for="sort" class="form-label">Сортирай по</label>
+            <select name="sort" id="sort" class="form-select">
+                <option value=""></option>
+                <option value="likes" {{ request('sort') == 'likes' ? 'selected' : '' }}>Най-харесвани</option>
+                <option value="comments" {{ request('sort') == 'comments' ? 'selected' : '' }}>Най-коментирани</option>
+                <option value="rating" {{ request('sort') == 'rating' ? 'selected' : '' }}>Най-висок рейтинг</option>
+                <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Най-нови</option>
+            </select>
+        </div>
+
+        <div class="col-md-4 d-flex justify-content-start align-items-end">
+            <button type="submit" class="btn btn-primary">Филтрирай</button>
+            <a href="{{ route('recipes.index') }}" class="btn btn-outline-secondary ms-2">Изчисти</a>
+        </div>
+    </div>
+</form>
+
 @foreach($recipes as $recipe)
 <div class="card mb-3">
     <div class="card-body">
         <h5>{{ $recipe->title }}</h5>
         <p>{{ $recipe->description }}</p>
-        <small>Автор: {{ $recipe->user->name ?? 'No user' }} | Категория: {{ $recipe->category->name ?? 'Без категория' }}</small>
+        <small>Автор: {{ $recipe->user->name ?? 'No user' }} | Категория: {{ $recipe->category->name ?? 'Без категория' }}
+               | Дата на създаване: {{ $recipe->created_at->diffForHumans() ?? 'Няма дата' }}
+        </small>
         <br>
         <small>Харесвания: {{ $recipe->likes->count() }}</small>
 
@@ -73,13 +126,43 @@
                     @endauth
 
                     <hr>
-                    <!-- Секция коментари (в разработка) -->
+                    <!-- Секция коментари -->
                     <h6>Коментари</h6>
-                    <div class="mb-2">
-                        <textarea class="form-control" rows="2" placeholder="Остави коментар..." disabled></textarea>
-                        <button class="btn btn-sm btn-primary mt-1" disabled>Публикувай (очаква се)</button>
-                        <p class="text-muted mt-2">Функцията за коментари е в разработка 😊</p>
-                    </div>
+
+                    @auth
+                    <form action="{{ route('comments.store', $recipe->id) }}" method="POST" class="mb-3">
+                        @csrf
+                        <div class="mb-2">
+                            <textarea name="comment" class="form-control" rows="2" placeholder="Остави коментар..." required></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label for="rating">Оценка:</label>
+                            <select name="rating" class="form-select form-select-sm w-auto d-inline-block ms-2">
+                                <option value="">Без</option>
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <option value="{{ $i }}">{{ $i }} ⭐</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary">Публикувай</button>
+                    </form>
+                    @endauth
+
+                    <!-- Показване на коментари -->
+                    @if($recipe->comments->count())
+                        @foreach($recipe->comments as $comment)
+                            <div class="border p-2 mb-2 rounded">
+                                <strong>{{ $comment->user->name }}</strong>
+                                @if($comment->rating)
+                                    – {{ $comment->rating }} ⭐
+                                @endif
+                                <p class="mb-1">{{ $comment->comment }}</p>
+                                <small class="text-muted">{{ $comment->created_at->diffForHumans() }}</small>
+                            </div>
+                        @endforeach
+                    @else
+                        <p class="text-muted">Още няма коментари.</p>
+                    @endif
                 </div>
             </div>
         </div>

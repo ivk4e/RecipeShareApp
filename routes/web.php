@@ -5,11 +5,12 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\CommentController;
 
-// 🏠 Начална страница – най-харесвани рецепти за днес
+// Начална страница – най-харесвани рецепти за днес
 Route::get('/', [RecipeController::class, 'home'])->name('home');
 
-// 🔐 Аутентикация
+// Аутентикация
 Route::get('/register', [UserController::class, 'showRegister'])->name('register');
 Route::post('/register', [UserController::class, 'register']);
 
@@ -18,7 +19,7 @@ Route::post('/login', [UserController::class, 'login']);
 
 Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
-// 🔒 Само за логнати потребители
+// Само за логнати потребители
 Route::middleware(['auth'])->group(function () {
     Route::get('/my-recipes', [RecipeController::class, 'my'])->name('recipes.my');
     Route::get('/recipes', [RecipeController::class, 'index'])->name('recipes.index');
@@ -39,3 +40,5 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
     Route::delete('/settings/delete', [SettingsController::class, 'destroy'])->name('settings.delete');
 });
+
+Route::middleware('auth')->post('/recipes/{id}/comments', [CommentController::class, 'store'])->name('comments.store');

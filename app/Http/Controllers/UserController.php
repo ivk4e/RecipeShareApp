@@ -43,31 +43,31 @@ class UserController extends Controller
 
     // Обработка на вход
     public function login(Request $request)
-{
-    $credentials = $request->validate([
-        'email' => 'required|email',
-        'password' => 'required|string',
-    ]);
+    {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
 
-    // Търсим потребителя ръчно, за да проверим дали е маркиран като изтрит
-    $user = \App\Models\User::where('email', $credentials['email'])->first();
+        // Търсим потребителя ръчно, за да проверим дали е маркиран като изтрит
+        $user = User::where('email', $credentials['email'])->first();
 
-    if (!$user || $user->is_user_deleted) {
+        if (!$user || $user->is_user_deleted) {
+            return back()->withErrors([
+                'email' => 'Профилът не съществува или е деактивиран.',
+            ]);
+        }
+
+        // Опитваме да логнем потребителя
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
+            return redirect()->intended(route('home'));
+        }
+
         return back()->withErrors([
-            'email' => 'Профилът не съществува или е деактивиран.',
+            'email' => 'Невалиден имейл или парола.',
         ]);
     }
-
-    // Опитваме да логнем потребителя
-    if (Auth::attempt($credentials)) {
-        $request->session()->regenerate();
-        return redirect()->intended(route('home'));
-    }
-
-    return back()->withErrors([
-        'email' => 'Невалиден имейл или парола.',
-    ]);
-}
 
     // Изход
     public function logout(Request $request)

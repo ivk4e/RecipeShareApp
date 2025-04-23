@@ -40,14 +40,49 @@ class RecipeController extends Controller
         return view('recipes.create', compact('categories'));
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $recipes = Recipe::with('user', 'category', 'likes')
-            ->where('is_recipe_deleted', false)
-            ->orderByDesc('created_at')
-            ->get();
+        // Започваме с query builder и зареждаме нужните релации
+        $query = Recipe::with(['user', 'category', 'likes', 'comments'])
+            ->withAvg('comments', 'rating')
+            ->where('is_recipe_deleted', false);
 
-        return view('recipes.index', compact('recipes'));
+        // Филтър по категория
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        // Филтър по име на потребител (автор)
+        if ($request->filled('user')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->user . '%');
+            });
+        }
+
+        // Филтър по точно избран рейтинг
+        if ($request->filled('rating')) {
+            $query->havingRaw('ROUND(comments_avg_rating, 0) = ?', [$request->rating]);
+        }
+
+        // Сортиране
+        if ($request->sort === 'likes') {
+            $query->withCount('likes')->orderByDesc('likes_count');
+        } elseif ($request->sort === 'comments') {
+            $query->withCount('comments')->orderByDesc('comments_count');
+        } elseif ($request->sort === 'rating') {
+            $query->orderByDesc('comments_avg_rating');
+        } else {
+            $query->orderByDesc('created_at'); // по подразбиране (най-нови)
+        }
+
+        // Взимаме резултатите с пагинация
+        $recipes = $query->paginate(10)->withQueryString();
+
+        // Взимаме всички категории за dropdown менюто
+        $categories = Category::all();
+
+        // Подаваме данните към view-то
+        return view('recipes.index', compact('recipes', 'categories'));
     }
 
 
